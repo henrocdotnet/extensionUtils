@@ -115,7 +115,7 @@ sub usage
 {
 print <<USAGE;
 Script Usage:
-  localeCompare [Options] [Locale_Root_Directory]
+  compareLocales.pl [Options] [Locale_Root_Directory]
 
 This script is used to compare the locales for Firefox extensions, providing
 data on how many strings are untranslated between the "master" (or root)
