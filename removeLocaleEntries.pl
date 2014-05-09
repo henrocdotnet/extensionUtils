@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 use Cwd;
 use Encode;
@@ -13,7 +13,7 @@ my $cwd = getcwd();
 my $inputFile = '';
 my $prefix = '';
 my $tempFile = 'cleaned_locale.dtd';
-my @toRemove = ();
+my %toRemove = ();
 
 GetOptions("input=s" => \$inputFile,
 		   "prefix=s" => \$prefix,
@@ -27,7 +27,7 @@ print " - Prefix:       $prefix\n\n";
 # Handle any entities on the command line
 foreach (@ARGV)
 {
-	push @toRemove, "${prefix}$_";
+	$toRemove{"${prefix}$_"} = 1;
 }
 
 # Handle any entities in an input file
@@ -46,14 +46,21 @@ if ($inputFile)
 			chomp;
 			s/^\s*//;
 			s/\s*$//;
-			push @toRemove, "${prefix}$_";
+			$toRemove{"${prefix}$_"} = 1;
 		}
 		close $in;
 	}
 }
 
+if ((scalar keys %toRemove) == 0)
+{
+	print "ERROR: No entities to remove! Supply an input file or a list of the\n";
+	print "       entities to remove on the command line.\n";
+	exit 1;
+}
+
 print "Entities to be removed:\n";
-foreach (@toRemove)
+foreach (sort keys %toRemove)
 {
 	print " - $_\n";
 }
@@ -63,53 +70,49 @@ find(\&wanted, $cwd);
 
 sub wanted
 {
-	return if $File::Find::name !~  m!chrome/locale!;
-	return if ! m/\.dtd$/;
+	return if $File::Find::name !~  m!chrome/locale!; # Only look in the chrome/locale folder
+	return if ! m/\.dtd$/; # Only look at .dtd files
 	
 	my $id = $File::Find::dir;
 	$id =~ s!^.+/(.+)$!$1!;
 	
-	printf("%7s", $id);
+	printf("%7s  --  %s", $id, $_);
 	
-	my @dtds = <*.dtd>;
-	foreach my $f (@dtds)
+	open my $in, '<:encoding(UTF-8)', $File::Find::name or die "Cannot open $File::Find::name: $!";
+	open my $out, '>:encoding(UTF-8)', $tempFile or die "Cannot open $tempFile: $!";
+	
+	my $removed = 0;
+	my $skip = 0;
+	while (<$in>)
 	{
-		open my $in, '<:encoding(UTF-8)', $f or die "Cannot open $f: $!";
-		open my $out, '>:encoding(UTF-8)', $tempFile or die "Cannot open $tempFile: $!";
+		$skip = 0;
 		
-		my $removed = 0;
-		my $skip = 0;
-		while (<$in>)
+		foreach my $match (keys %toRemove)
 		{
-			$skip = 0;
-			
-			foreach my $match (@toRemove)
+			if(m/\Q$match\E/)
 			{
-				if(m/\Q$match\E/)
-				{
-					$removed++;
-					$skip = 1;
-					last;
-				}
+				$removed++;
+				$skip = 1;
+				last;
 			}
-			
-			next if $skip == 1;
-			
-			print $out $_;
 		}
-		close $out;
-		close $in;
 		
-		if ($removed > 0)
-		{
-			printf("  --  Removed %d %s\n", $removed, $removed == 1 ? 'entity' : 'entities');
-			unlink $f or die "Unable to remove $f: $!";
-			rename $tempFile, $f;
-		}
-		else
-		{
-			print "  --  Nothing to do!\n";
-		}
+		next if $skip == 1;
+		
+		print $out $_;
+	}
+	close $out;
+	close $in;
+	
+	if ($removed > 0)
+	{
+		printf("  --  Removed %d %s\n", $removed, $removed == 1 ? 'entity' : 'entities');
+		unlink $File::Find::name or die "Unable to remove $File::Find: $!";
+		rename $tempFile, $File::Find::name;
+	}
+	else
+	{
+		print "  --  Nothing to do!\n";
 	}
 }
 
