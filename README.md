@@ -19,6 +19,11 @@ figuring out which locales have not been updated.
 Converts a given list of locale entities into corresponding properties. Handy
 for migrating existing entity localizations into a `.properties` file.
 
+## findOrphanedEntities.pl
+
+This script looks for entities from DTD files that aren't used anywhere in
+corresponding XUL files. Handy for locating strings that have been deprecated.
+
 ## removeLocaleEntries.pl
 
 This script removes a given list of entries from all of the locale folders it
@@ -50,7 +55,7 @@ ensure what the script expects. This README file is likely to be out of date.
       to the current working directory if not provided)
       
     [Options]
-      --master
+      --master LOCALE-NAME
       Sets the master locale folder to compare against; defaults to 'en-US'
       
       --verbose
@@ -93,6 +98,22 @@ ensure what the script expects. This README file is likely to be out of date.
     Example Usage:
       entityToProperty.pl --input map.txt --target myExtension.properties
       
+## findOrphanedEntities.pl
+
+    Script Usage:
+      findOrphanedEntities.pl [Options]
+      
+    This script is used to find entities in Firefox extension locale files that are
+    not used anywhere in the project. Handy for determining what entities can be
+    dropped going forward.
+    
+    LIMITATIONS
+    At the moment, this script only works on DTD files, not .properties files
+    
+    [Options]
+      --master LOCALE-NAME
+      Specifies the name of the master locale to compare against; defaults to 'en-US'
+
 ## removeLocaleEntries.pl
 
     Script Usage:
