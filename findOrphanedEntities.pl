@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 use Cwd;
 use File::Find;
@@ -15,7 +15,16 @@ GetOptions(
 	"help" => sub { usage(); exit 0; }
 );
 
-my $target = getcwd();
+my $target = shift;
+if (!$target)
+{
+	$target = getcwd();
+}
+else
+{
+	chdir $target or die "Unable to change to $target: $!";
+}
+
 my %ids = ();
 my %unknown = ();
 
@@ -48,6 +57,7 @@ sub scanForIds
 {
 	return if $File::Find::dir =~ m!chrome/locale!; # Skip all locale folders
 	return if ! m/\.xul$/; # Skip anything that's not a XUL file
+	print " - Scanning $_\n";
 	
 	open my $in, '<:encoding(UTF-8)', $File::Find::name or die "Cannot open $File::Find::name: $!";
 	while (<$in>)
@@ -95,7 +105,7 @@ sub usage
 {
 print <<USAGE;
 Script Usage:
-  findOrphanedEntities.pl [Options]
+  findOrphanedEntities.pl [Options] [Extension_Root_Dir]
   
 This script is used to find entities in Firefox extension locale files that are
 not used anywhere in the project. Handy for determining what entities can be
@@ -104,8 +114,12 @@ dropped going forward.
 LIMITATIONS
 At the moment, this script only works on DTD files, not .properties files
 
+[Extension_Root_Directory]
+  If provided, specifies the absolute location of the root folder of the
+  extension (defaults to the current working directory if not provided)
+
 [Options]
   --master LOCALE-NAME
-  Specifies the name of the master locale to compare against; defaults to 'en-US'
+  Specifies the name of the locale to compare against; defaults to 'en-US'
 USAGE
 }
