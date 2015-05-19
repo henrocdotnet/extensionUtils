@@ -107,12 +107,13 @@ sub wanted
 	if ($removed > 0)
 	{
 		printf("  --  Removed %d %s\n", $removed, $removed == 1 ? 'entity' : 'entities');
-		unlink $File::Find::name or die "Unable to remove $File::Find: $!";
+		unlink $File::Find::name or die "Unable to remove $File::Find::name. $!";
 		rename $tempFile, $File::Find::name;
 	}
 	else
 	{
 		print "  --  Nothing to do!\n";
+		unlink $tempFile or die "Unable to remove $tempFile: $!";
 	}
 }
 
